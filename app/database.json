@@ -1,0 +1,40 @@
+{
+	"metadata": {
+		"name": "NextJS App Router",
+		"description": "Boilerplate for the NextJS App Router"
+	},
+	"navigation": [
+		{ "href": "/", "text": "home" },
+		{ "href": "/openai", "text": "openai" },
+		{ "href": "/model", "text": "model" },
+		{ "href": "/link-4", "text": "link 4" },
+		{ "href": "/link-5", "text": "link 5" },
+		{ "href": "/link-6", "text": "link 6" },
+		{ "href": "/link-7", "text": "link 7" }
+	],
+	"pages": {
+		"home": { "hero": { "text": ["NextJS App Router"] } },
+		"openai": {
+			"intro": { "text": ["Welcome to OpenAI"] },
+			"placeholder": {
+				"default": { "text": ["Type prompt and press [return] key"] },
+				"processing": { "text": ["Processing prompt..."] },
+				"error": { "text": ["Not connected to OpenAI API"] }
+			}
+		},
+		"model": {
+			"info": {
+				"text": [
+					"Welcome",
+					"Model-Viewer",
+					"Add .glb model files to the public folder and view them by adding the file name to the URL path.",
+					"Example Path"
+				],
+				"href": ["/model/55horizon.glb"]
+			}
+		}
+	},
+	"footer": {
+		"text": ["55horizon © 2023", "Designed by Sam Larsen"]
+	}
+}
