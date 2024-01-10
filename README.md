@@ -80,6 +80,8 @@ http://YOUR_LOCAL_IP:3000
 
 - Content database `/app/database.json`
 
+- Tailwind CSS
+
 ## Learn More
 
 To learn more, take a look at the following resources:
