@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import logo from "@/app/assets/logo.svg";
+import loading from "@/app/assets/loading.gif";
 
 export default function Preloader({ time, children }) {
 	const [expiredTime, setExpiredTime] = useState(false);
@@ -41,7 +42,15 @@ export default function Preloader({ time, children }) {
 				width={0}
 				height={0}
 				priority={true}
-				className="h-8 w-auto"
+				className="h-[24px] w-auto"
+				alt="Logo"
+			/>
+			<Image
+				src={loading}
+				width={0}
+				height={0}
+				priority={true}
+				className="h-[8px] w-auto mt-[20px] invert"
 				alt="Logo"
 			/>
 		</div>

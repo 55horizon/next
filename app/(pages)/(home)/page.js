@@ -1,4 +1,4 @@
-import Hero from "@/app/(pages)/home/components/hero.js";
+import Hero from "@/app/(pages)/(home)/components/hero.js";
 
 export default function Page() {
 	return (
