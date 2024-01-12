@@ -85,7 +85,7 @@ export default function Chat() {
 				<img src={message} alt="DALL-E 3 image" className="max-h-[80%]" />
 			) : (
 				<div
-					className={`text-[#dddddd] text-[16px] text-left tracking-[1px] max-w-[800px] py-[100px] ${roboto_mono.className}`}
+					className={`text-[#dddddd] text-[16px] text-left tracking-[1px] max-w-[800px] py-[60px] ${roboto_mono.className}`}
 				>
 					<pre>
 						<div dangerouslySetInnerHTML={{ __html: message }} />
