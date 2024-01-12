@@ -92,7 +92,7 @@ export default function Chat() {
 					</pre>
 				</div>
 			)}
-			<div className="flex items-end justify-center fixed inset-x-0 bottom-[13px]">
+			<div className="flex flex-col items-center justify-center fixed inset-x-0 bottom-[13px]">
 				{rows >= 2 && (
 					<button
 						onClick={() => setRows(1)}
