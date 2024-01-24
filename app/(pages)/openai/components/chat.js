@@ -1,119 +1,150 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useChat } from "ai/react";
 import { roboto_mono } from "@/app/styles/fonts.js";
+import secureLocalStorage from "react-secure-storage";
 import database from "@/app/database.json";
 
 export default function Chat() {
-	const [message, setMessage] = useState(database.pages.openai.intro.text[0]);
-	const [prompt, setPrompt] = useState("");
-	const [rows, setRows] = useState(1);
 	const defaultPlaceholder = database.pages.openai.placeholder.default.text[0];
 	const processingPlaceholder =
 		database.pages.openai.placeholder.processing.text[0];
 	const errorPlaceholder = database.pages.openai.placeholder.error.text[0];
 	const [placeholder, setPlaceholder] = useState(defaultPlaceholder);
-	const isRunning = useRef(false);
+	const [error, setError] = useState(false);
+	const system = !secureLocalStorage.getItem("messages")
+		? [
+				{
+					role: "system",
+					content:
+						"You are a helpful code assistant, part of a NextJS playground application."
+				}
+			]
+		: secureLocalStorage.getItem("messages");
+	const {
+		messages,
+		input,
+		isLoading,
+		setMessages,
+		handleInputChange,
+		handleSubmit
+	} = useChat({
+		api: "/openai/api",
+		initialMessages: system,
+		onError: handleError
+	});
+	const [row, setRow] = useState(1);
+	const pageBottomRef = useRef(null);
+
+	function handleError() {
+		setError(true);
+	}
 
 	useEffect(() => {
-		if (!isRunning.current) {
-			isRunning.current = true;
-			postMessage("Hello");
-		}
-	}, []);
-
-	function postMessage(prompt) {
-		console.log(`User: ${prompt}`);
-		fetch("/openai/api", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(prompt)
-		})
-			.then(async (response) => {
-				if (!response.ok) {
-					const msg = await response.text();
-					throw new Error(msg);
-				}
-				return response.json();
-			})
-			.then((promise) => {
-				console.log(`Assistant: ${promise}`);
-				if (promise.startsWith("http")) {
-					setMessage(promise);
-				} else {
-					function addTags(text) {
-						const regex = /[\s]*```([^`]+)```[\s]*/g;
-						return text.replace(regex, function (_, code) {
-							return `<div class="border border-[#dddddd80] p-[20px] my-[30px] rounded-[10px]">${code}</div>`;
-						});
-					}
-					setMessage(addTags(promise));
-				}
-				setPlaceholder(defaultPlaceholder);
-			})
-			.catch((error) => {
-				console.error(error);
-				setMessage(error.toString());
-				setPlaceholder(errorPlaceholder);
-			});
-	}
-
-	function handleInputChange(e) {
-		setPrompt(e.target.value);
-	}
-
-	function handleKeyDown(e) {
-		if (e.shiftKey && e.key === "Enter") {
-			e.preventDefault();
-			setPrompt((prev) => prev + "\n");
-			setRows(rows + 1);
-		} else if (e.key === "Enter" && prompt !== "") {
-			postMessage(prompt);
-			setPrompt("");
+		if (isLoading) {
 			setPlaceholder(processingPlaceholder);
+		} else {
+			if (!error) {
+				secureLocalStorage.setItem("messages", messages);
+				setPlaceholder(defaultPlaceholder);
+			} else {
+				setMessages([{ role: "system", content: errorPlaceholder }]);
+				setPlaceholder(errorPlaceholder);
+			}
 		}
+	}, [isLoading]);
+
+	useEffect(() => {
+		scrollToBottom();
+	}, [messages]);
+
+	function addTags(text) {
+		const regex = /```[\s]*[^\n]*\n([^`]+)```/g;
+		return text.replace(regex, function (_, code) {
+			return `<div class="border border-[#dddddd80] p-[20px] my-[30px] rounded-[10px]">${code}</div>`;
+		});
+	}
+
+	function scrollToBottom() {
+		pageBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+	}
+
+	function deleteMessages(e) {
+		secureLocalStorage.clear();
 	}
 
 	return (
 		<div
 			id="chat"
-			className="flex items-center justify-center flex-col w-full min-h-[95vh]"
+			className="flex items-center mix-blend-exclusion justify-center flex-col min-h-[95vh]"
 		>
-			{message.startsWith("http") ? (
-				<img src={message} alt="DALL-E 3 image" className="max-h-[80%]" />
-			) : (
-				<div
-					className={`text-[#dddddd] text-[16px] text-left tracking-[1px] max-w-[800px] py-[60px] ${roboto_mono.className}`}
+			<ul className="py-[160px] w-full">
+				{messages.map((m, index) => (
+					<li key={index} className={`text-[#7F7F7F] ${roboto_mono.className}`}>
+						{index !== 0 && (
+							<div className="w-full h-[1px] bg-[#ffffff20] my-[100px]" />
+						)}
+						<div className="text-[10px] mb-[10px] px-[13px] uppercase tracking-[2px] max-w-[800px] m-auto">
+							{m.role === "user"
+								? "User"
+								: index !== 0
+									? "Assistant"
+									: "System Settings"}
+						</div>
+						<pre>
+							<div
+								className="text-white max-w-[800px] px-[13px] m-auto"
+								dangerouslySetInnerHTML={{ __html: addTags(m.content) }}
+							/>
+						</pre>
+					</li>
+				))}
+			</ul>
+			<div className="text-white flex flex-col items-center justify-center fixed inset-x-0 bottom-[13px] max-w-[1280px] m-auto">
+				<form
+					id="prompt"
+					onSubmit={
+						input.toUpperCase() !== "DELETE MESSAGES"
+							? handleSubmit
+							: deleteMessages
+					}
+					className="w-full px-[13px]"
 				>
-					<pre>
-						<div dangerouslySetInnerHTML={{ __html: message }} />
-					</pre>
-				</div>
-			)}
-			<div className="flex flex-col items-center justify-center fixed inset-x-0 bottom-[13px]">
-				{rows >= 2 && (
-					<button
-						onClick={() => setRows(1)}
-						className={`flex items-center justify-center m-auto text-[12px] font-[200] mb-[10px] text-white  ${roboto_mono.className}`}
-					>
-						[ MINIMIZE ]
-					</button>
-				)}
-				<textarea
-					placeholder={placeholder}
-					onFocus={(e) => (e.target.placeholder = "")}
-					onBlur={(e) => (e.target.placeholder = placeholder)}
-					value={prompt}
-					disabled={placeholder === defaultPlaceholder ? false : true}
-					onChange={(e) => handleInputChange(e)}
-					onKeyDown={(e) => handleKeyDown(e)}
-					rows={rows}
-					className="text-white bg-[#000000ee] text-[12px] text-left px-[20px] py-[10px] w-[900px] max-[1000px]:w-[90vw] border border-[#ffffff80] rounded-[10px]"
-				/>
+					{row >= 2 && (
+						<button
+							onClick={() => setRow(1)}
+							className={`flex items-center justify-center m-auto text-[12px] font-[200] mb-[10px] text-white  ${roboto_mono.className}`}
+						>
+							[ MINIMIZE ]
+						</button>
+					)}
+					<div className="border bg-[#000000ee] border-[#ffffff80]">
+						<label className="flex">
+							<textarea
+								value={input}
+								onChange={handleInputChange}
+								placeholder={placeholder}
+								disabled={isLoading ? true : false}
+								rows={row}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && e.shiftKey) {
+										e.preventDefault;
+										if (row < 10) {
+											setRow(row + 1);
+										}
+									} else if (e.key === "Enter") {
+										e.preventDefault();
+										document.getElementById("prompt").requestSubmit();
+									}
+								}}
+								className={`text-white text-[12px] text-left px-[20px] py-[10px] w-full ${roboto_mono.className}`}
+							/>
+						</label>
+					</div>
+				</form>
 			</div>
-			<div className="flex h-[13px] w-full fixed bottom-0 bg-black" />
+			<div ref={pageBottomRef} />
 		</div>
 	);
 }

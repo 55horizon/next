@@ -17,9 +17,9 @@
 		"openai": {
 			"intro": { "text": ["Welcome to OpenAI"] },
 			"placeholder": {
-				"default": { "text": ["Type prompt and press [return] key"] },
+				"default": { "text": ["Type prompt and press [return]"] },
 				"processing": { "text": ["Processing prompt..."] },
-				"error": { "text": ["Not connected to OpenAI API"] }
+				"error": { "text": ["Add your OpenAI API key to your .env file"] }
 			}
 		},
 		"model": {

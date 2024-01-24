@@ -15,6 +15,8 @@ export default function Dynamic({ children }) {
 
 	const renderModelViewer = pathname.startsWith("/model/");
 
+	const renderPadding = !pathname.startsWith("/openai");
+
 	const modelViewer = (
 		<head>
 			<script
@@ -28,7 +30,7 @@ export default function Dynamic({ children }) {
 		<html lang="en">
 			{renderModelViewer && modelViewer}
 			<body id="top">
-				<div className="p-[13px]">
+				<div className={renderPadding ? "p-[13px]" : "p-0"}>
 					<Provider>
 						<Preloader time={500}>
 							{renderNavbar &&

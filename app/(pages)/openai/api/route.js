@@ -1,26 +1,29 @@
-import {
-	messages,
-	params,
-	chat_completion,
-	image_completion
-} from "@/app/(pages)/openai/api/configuration.js";
+import OpenAI from "openai";
+import { OpenAIStream, StreamingTextResponse } from "ai";
+
+export const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY || "NO KEY"
+});
+
+export const runtime = "edge";
 
 export async function GET() {
 	try {
-		return new Response(JSON.stringify(messages), {
-			headers: { "Content-Type": "application/json" }
-		});
-	} catch {
-		let status = 500;
-		let message = "An error occurred";
+		const response = await fetch(
+			"https://status.openai.com/api/v2/status.json"
+		);
 
-		if (error.status) {
-			status = error.status;
-			message = error.message || message;
+		if (!response.ok) {
+			throw new Error(response.status);
 		}
 
-		return new Response(message, {
-			status: status,
+		const data = await response.json();
+
+		return new Response(JSON.stringify(data), {
+			headers: { "Content-Type": "application/json" }
+		});
+	} catch (error) {
+		return new Response(error, {
 			headers: { "Content-Type": "application/json" }
 		});
 	}
@@ -28,31 +31,44 @@ export async function GET() {
 
 export async function POST(req) {
 	try {
-		const request = await req.json();
+		const { messages } = await req.json();
 
-		messages.push({ role: "user", content: request });
+		let response;
 
-		const response = await chat_completion(params);
+		if (messages[messages.length - 1].content.startsWith("image:")) {
+			const clean_text = messages[messages.length - 1].content.replace(
+				"image:",
+				""
+			);
 
-		messages.push({
-			role: "assistant",
-			content: response.choices[0].message.content
-		});
+			const prompt = clean_text.trim();
 
-		if (
-			response.choices[0].message.content.includes("use-dalle-system-prompt")
-		) {
-			const res = response.choices[0].message.content;
-			const prompt = res.replace("use-dalle-system-prompt:", "");
-			const image = await image_completion(prompt);
-
-			return new Response(JSON.stringify(image.data[0].url), {
-				headers: { "Content-Type": "application/json" }
+			response = await openai.images.generate({
+				model: "dall-e-3",
+				prompt: prompt,
+				n: 1,
+				size: "1024x1024"
 			});
+
+			const message = response.data[0].revised_prompt;
+			const image = response.data[0].url;
+
+			return new Response(
+				`${message}\n\n<a href=${image} target="_blank">${image}</a>`,
+				{
+					headers: { "Content-Type": "application/json" }
+				}
+			);
 		} else {
-			return new Response(JSON.stringify(response.choices[0].message.content), {
-				headers: { "Content-Type": "application/json" }
+			response = await openai.chat.completions.create({
+				model: "gpt-4",
+				stream: true,
+				messages: messages
 			});
+
+			const stream = OpenAIStream(response);
+
+			return new StreamingTextResponse(stream);
 		}
 	} catch (error) {
 		let status = 500;
